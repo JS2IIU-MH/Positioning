@@ -125,34 +125,40 @@ class Application(tk.Frame):
 
         frame_a3.grid()
 
+        button_A = tk.Button(frame_A, text='Update Position')
+        button_A.grid()
+
         frame_A.grid(row=0, column=0)
 
 
         # Frame B
-        frame_B = tk.Frame(master)
+        frame_B = tk.Frame(master, width=400)
+        # frame_B.grid_propagate(False)
         self.draw_graph(frame_B)
 
-        frame_B.grid(row=0, column=1)
+        frame_B.grid(row=0, column=1, rowspan=2)
 
         # Frame C
         frame_C = tk.Frame(master)
 
         frame_c1 = tk.Frame(frame_C)
-        
         self.draw_matrix(frame_c1, self.dist_cal16, 'Distance')
-
         frame_c1.grid()
 
         frame_c2 = tk.Frame(frame_C)
         self.draw_matrix(frame_c2, self.dist_in16, 'Input')
-
         frame_c2.grid()
 
         frame_c3 = tk.Frame(frame_C)
-
+        self.update_adj()
+        self.draw_matrix(frame_c3, self.dist_adj16, 'Adjust')
         frame_c3.grid()
 
-        frame_C.grid(row=0, column=2)
+        button_C = tk.Button(frame_C, text='Update Adjust')
+        button_C.grid()
+
+
+        frame_C.grid(row=1, column=0)
 
     def get_fix_pos(self):
         self.fix_pos = [[- self.fixed_ax / 2, self.fixed_ay / 2, self.fixed_z],
@@ -196,7 +202,7 @@ class Application(tk.Frame):
                 entry_list[i].grid(row=row+1, column=col)
                 i += 1
 
-        #     self.dist_cal16 = [0 for i in range(16)]
+        # self.dist_cal16 = [0 for i in range(16)]
         # self.dist_in16 = [0 for i in range(16)]
         # self.dist_adj16 = [0 for i in range(16)]
 
@@ -214,25 +220,47 @@ class Application(tk.Frame):
             np.power(p2[0] - p1[0], 2) + np.power(p2[1] - p1[1], 2) + np.power(p2[2] - p1[2], 2)
         )
         return dist
+    
+    @classmethod
+    def gen_pos_list(cls, pos):
+        ''' fix_pos, mov_posからプロット用の配列を作成するx, yタプルを返す '''
+        x_list = [pos[0][0], pos[1][0], pos[3][0], pos[2][0], pos[0][0]]
+        y_list = [pos[0][1], pos[1][1], pos[3][1], pos[2][1], pos[0][1]]
+        z_list = [pos[0][2], pos[1][2], pos[3][2], pos[2][2], pos[0][2]]
+
+        return x_list, y_list
+
 
     def draw_graph(self, master):
         ''' matplotlib graph on tkinter '''
-        pf = self.fix_pos
-        pm = self.mov_pos
+        pfx, pfy = self.gen_pos_list(self.fix_pos)
+        pmx, pmy = self.gen_pos_list(self.mov_pos)
 
         fig, ax = plt.subplots()
-        fig.set_figwidth(1)
-        fig.set_figheight(2)
+        fig.set_figwidth(2.3)
+        fig.set_figheight(3.8)
+        # fig.set_dpi(600)
 
-        h_fix, = ax.plot([pf[i][0] for i in range(4)], [pf[i][1] for i in range(4)], color='blue')
-        h_mov, = ax.plot([pm[i][0] for i in range(4)], [pm[i][1] for i in range(4)], color='red')
+        self.h_fix, = ax.plot(pfx, pfy, color='blue')
+        self.h_mov, = ax.plot(pmx, pmy, color='red')
         ax.set_xlim(-100, 100)
         ax.set_ylim(-400, 50)
-        ax.grid()
+
+        ax.set_xticks([-100, -50, 0, 50, 100])
+        ax.set_yticks([-400, -350, -300, -250, -200, -150, -100, -50,  0, 50])
+        ax.set_xticks([-100, -75, -50, -25, 0, 25, 50, 75, 100], minor=True)
+        ax.grid(which='major', alpha=0.6)
+        ax.grid(which='minor', alpha=0.3)
+        
+
+        plt.xticks(fontsize=5)
+        plt.yticks(fontsize=5)
+
 
         # canvas
         canvas = FigureCanvasTkAgg(fig, master=master)
         canvas_widget = canvas.get_tk_widget()
+        canvas_widget.grid_propagate(True)
         canvas_widget.grid()
 
 
@@ -240,6 +268,13 @@ class Application(tk.Frame):
     def update_graph(self):
         pass
 
+    def update_adj(self):
+        ''' dist_adj16を更新する '''
+        # self.dist_cal16 = [0 for i in range(16)]
+        # self.dist_in16 = [0 for i in range(16)]
+        # self.dist_adj16 = [0 for i in range(16)]
+        for i in range(16):
+            self.dist_adj16[i] = self.dist_in16[i] - self.dist_cal16[i]
 
 
 
@@ -248,8 +283,8 @@ def main():
 
     root = tk.Tk()
 
-    root.geometry('600x500')
-    root.title('tkinter template')
+    root.geometry('800x800')
+    root.title('Measurement Adjustment')
     root.grid_anchor(tk.CENTER)
 
     app = Application(master=root)
