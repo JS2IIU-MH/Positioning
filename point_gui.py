@@ -102,15 +102,15 @@ class Application(tk.Frame):
         label_a3_z = tk.Label(frame_a3, text='Z', width=label_width)
         label_a3_th = tk.Label(frame_a3, text='TH', width=label_width)
 
-        sv_a3_x = tk.StringVar(value=str(self.position[0]))
-        sv_a3_y = tk.StringVar(value=str(self.position[1]))
-        sv_a3_z = tk.StringVar(value=str(self.position[2]))
-        sv_a3_th = tk.StringVar(value=str(self.position[3]))
+        self.sv_a3_x = tk.StringVar(value=str(self.position[0]))
+        self.sv_a3_y = tk.StringVar(value=str(self.position[1]))
+        self.sv_a3_z = tk.StringVar(value=str(self.position[2]))
+        self.sv_a3_th = tk.StringVar(value=str(self.position[3]))
 
-        ent_a3_x = tk.Entry(frame_a3, textvariable=sv_a3_x, width=entry_width, justify=tk.CENTER)
-        ent_a3_y = tk.Entry(frame_a3, textvariable=sv_a3_y, width=entry_width, justify=tk.CENTER)
-        ent_a3_z = tk.Entry(frame_a3, textvariable=sv_a3_z, width=entry_width, justify=tk.CENTER)
-        ent_a3_th = tk.Entry(frame_a3, textvariable=sv_a3_th, width=entry_width, justify=tk.CENTER)
+        ent_a3_x = tk.Entry(frame_a3, textvariable=self.sv_a3_x, width=entry_width, justify=tk.CENTER)
+        ent_a3_y = tk.Entry(frame_a3, textvariable=self.sv_a3_y, width=entry_width, justify=tk.CENTER)
+        ent_a3_z = tk.Entry(frame_a3, textvariable=self.sv_a3_z, width=entry_width, justify=tk.CENTER)
+        ent_a3_th = tk.Entry(frame_a3, textvariable=self.sv_a3_th, width=entry_width, justify=tk.CENTER)
 
         label_a3.grid(row=0, column=0, columnspan=2)
         label_a3_x.grid(row=1, column=0)
@@ -125,7 +125,7 @@ class Application(tk.Frame):
 
         frame_a3.grid()
 
-        button_A = tk.Button(frame_A, text='Update Position')
+        button_A = tk.Button(frame_A, text='Update Position', command=self.click_update_pos)
         button_A.grid()
 
         frame_A.grid(row=0, column=0)
@@ -168,8 +168,11 @@ class Application(tk.Frame):
 
     def get_mov_pos(self):
         # self.position = [5, -50, 10, 5]
+        # TODO: 変な処理を見直す↓
         if self.position[3] != 0:
             angle_rad = self.position[3] / 180 * np.pi
+        else:
+            angle_rad = 0
         
         r_cos = np.cos(angle_rad)
         r_sin = np.sin(angle_rad)
@@ -236,13 +239,13 @@ class Application(tk.Frame):
         pfx, pfy = self.gen_pos_list(self.fix_pos)
         pmx, pmy = self.gen_pos_list(self.mov_pos)
 
-        fig, ax = plt.subplots()
-        fig.set_figwidth(2.3)
-        fig.set_figheight(3.8)
+        self.fig, ax = plt.subplots()
+        self.fig.set_figwidth(2.3)
+        self.fig.set_figheight(3.8)
         # fig.set_dpi(600)
 
-        self.h_fix, = ax.plot(pfx, pfy, color='blue')
-        self.h_mov, = ax.plot(pmx, pmy, color='red')
+        self.h_fix, = ax.plot(pfx, pfy, color='blue', marker='o', markersize=2, linewidth=0.5, linestyle='--')
+        self.h_mov, = ax.plot(pmx, pmy, color='red', marker='o', markersize=2, linewidth=0.5, linestyle='--')
         ax.set_xlim(-100, 100)
         ax.set_ylim(-400, 50)
 
@@ -251,22 +254,55 @@ class Application(tk.Frame):
         ax.set_xticks([-100, -75, -50, -25, 0, 25, 50, 75, 100], minor=True)
         ax.grid(which='major', alpha=0.6)
         ax.grid(which='minor', alpha=0.3)
-        
 
         plt.xticks(fontsize=5)
         plt.yticks(fontsize=5)
 
 
         # canvas
-        canvas = FigureCanvasTkAgg(fig, master=master)
+        canvas = FigureCanvasTkAgg(self.fig, master=master)
         canvas_widget = canvas.get_tk_widget()
         canvas_widget.grid_propagate(True)
         canvas_widget.grid()
 
+    def click_update_pos(self):
+        ''' Update Positionボタンがクリックされた時の処理 '''
+        # update self.position = [5, -50, 10, 5]
+        self.update_pos()
+        # TODO: ここにfix_ax, ay, mov_ax, ayもアップデートするコードを入れる
+        # update self.mov_pos
+        # self.get_mov_pos()
+        self.get_mov_pos()
+        # update graph
+        self.update_graph()
 
+    def update_pos(self):
+        ''' self.mov_posを更新する '''
+        # stringvarの値を得るには.get()する
+        self.position[0] = int(self.sv_a3_x.get())
+        self.position[1] = int(self.sv_a3_y.get())
+        self.position[2] = int(self.sv_a3_z.get())
+        self.position[3] = int(self.sv_a3_th.get())
+
+        print(self.position)
+
+    def click_update_adj(self):
+        pass
 
     def update_graph(self):
-        pass
+        ''' グラフ更新 '''
+        self.fig.canvas.flush_events()
+
+        new_x, new_y = self.gen_pos_list(self.mov_pos)
+        self.h_mov.set_xdata(new_x)
+        self.h_mov.set_ydata(new_y)
+
+        new_x, new_y = self.gen_pos_list(self.fix_pos)
+        self.h_fix.set_xdata(new_x)
+        self.h_fix.set_ydata(new_y)
+
+        self.fig.canvas.draw()
+        
 
     def update_adj(self):
         ''' dist_adj16を更新する '''
