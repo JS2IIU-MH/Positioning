@@ -287,6 +287,7 @@ class Application(tk.Frame):
         print(self.position)
 
     def click_update_adj(self):
+        ''' Update Adjustment ボタンがクリックされた時の処理 '''
         pass
 
     def update_graph(self):
